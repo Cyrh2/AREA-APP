@@ -1,0 +1,8 @@
+# Ignorer ces fichiers lors du build EAS
+node_modules/
+.expo/
+.vscode/
+*.log
+.DS_Store
+.env.local
+.env.*.local
