@@ -234,7 +234,7 @@ export const CreateAreaWizard = ({ onClose, initialArea, onDelete, services, con
                                     <Button as="a" href={getConnectUrl(selectedActionServiceDef?.slug || '')} icon={ChevronRight}>Se connecter à {selectedActionServiceDef?.name}</Button>
                                     {selectedActionServiceDef?.slug === 'discord' && (
                                         <div className="pt-2">
-                                            <Button variant="secondary" className="!py-1.5 !px-3 !text-xs" as="a" href="https://discord.com/api/oauth2/authorize?client_id=1446563741150871645&permissions=8&scope=bot%20applications.commands" target="_blank" icon={Plus}>Inviter le Bot</Button>
+                                            <Button variant="secondary" className="!py-1.5 !px-3 !text-xs" as="a" href={`${BASE_URL}/services/discord/invite-bot?userId=${JSON.parse(localStorage.getItem('user') || '{}').id || ''}`} target="_blank" icon={Plus}>Inviter le Bot</Button>
                                         </div>
                                     )}
                                 </div>
@@ -366,7 +366,7 @@ export const CreateAreaWizard = ({ onClose, initialArea, onDelete, services, con
                                     <Button as="a" href={getConnectUrl(selectedReactionServiceDef?.slug || '')} icon={ChevronRight}>Se connecter à {selectedReactionServiceDef?.name}</Button>
                                     {selectedReactionServiceDef?.slug === 'discord' && (
                                         <div className="pt-2">
-                                            <Button variant="secondary" className="!py-1.5 !px-3 !text-xs" as="a" href="https://discord.com/api/oauth2/authorize?client_id=1446563741150871645&permissions=8&scope=bot%20applications.commands" target="_blank" icon={Plus}>Inviter le Bot</Button>
+                                            <Button variant="secondary" className="!py-1.5 !px-3 !text-xs" as="a" href={`${BASE_URL}/services/discord/invite-bot?userId=${JSON.parse(localStorage.getItem('user') || '{}').id || ''}`} target="_blank" icon={Plus}>Inviter le Bot</Button>
                                         </div>
                                     )}
                                 </div>
