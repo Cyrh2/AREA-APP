@@ -7,22 +7,18 @@ module.exports = {
     icon: 'clock',
     
     actions: {
-        // 1. Tous les jours à une heure précise
         daily: async (params) => {
             return await actions.check('timer_daily', params);
         },
-        // 2. Un jour de la semaine précis (Lundi, Mardi...)
         weekly: async (params) => {
             return await actions.check('timer_weekly', params);
         },
-        // 3. Un jour du mois précis (le 1er, le 15...)
         monthly: async (params) => {
             return await actions.check('timer_monthly', params);
         }
     },
 
     reactions: {
-        // Une réaction simple pour debugger ou faire des tests
         log_message: async (params) => {
             return await reactions.execute('timer_log_message', params);
         }

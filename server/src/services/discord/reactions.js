@@ -1,6 +1,6 @@
 // server/src/services/discord/reactions.js
 const axios = require('axios');
-require('dotenv').config(); // Pour récupérer le Token du Bot
+require('dotenv').config();
 
 module.exports = {
     execute: async (slug, params, token, userId) => {
@@ -14,8 +14,6 @@ module.exports = {
 async function sendMessage(params) {
     const { channel_id, message } = params;
 
-    // Le Token du Bot est stocké dans le .env, pas besoin du token OAuth de l'utilisateur
-    // car c'est le Bot lui-même qui parle.
     const botToken = process.env.DISCORD_BOT_TOKEN;
 
     if (!channel_id || !message) {
@@ -31,7 +29,7 @@ async function sendMessage(params) {
             { content: message },
             {
                 headers: {
-                    'Authorization': `Bot ${botToken}`, // Note le préfixe "Bot "
+                    'Authorization': `Bot ${botToken}`,
                     'Content-Type': 'application/json'
                 }
             }

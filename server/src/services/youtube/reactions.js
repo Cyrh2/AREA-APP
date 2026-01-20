@@ -1,7 +1,6 @@
 // services/youtube/reactions.js
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
-// 👇 Vérifie le chemin (ex: '../google/tokenHandler')
 const { refreshGoogleToken } = require('../google/tokenHandler'); 
 require('dotenv').config();
 
@@ -9,9 +8,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 module.exports = {
     execute: async (slug, params, token, userId) => {
-        // console.log(`[DEBUG] YouTube Reaction Target: ${slug}`);
 
-        // --- ANCIENNES RÉACTIONS (CONSERVÉES) ---
         if (slug === 'youtube_add_to_playlist' || slug === 'youtube_playlist_add') {
             return await addToPlaylist(params, token, userId);
         }
@@ -19,7 +16,6 @@ module.exports = {
             return await subscribeToChannel(params, token, userId);
         }
 
-        // --- NOUVELLES RÉACTIONS (AJOUTÉES) ---
         if (slug === 'youtube_post_comment') {
             return await postComment(params, token, userId);
         }
@@ -38,9 +34,6 @@ module.exports = {
     }
 };
 
-// ==========================================
-// 1. ADD TO PLAYLIST (Existant)
-// ==========================================
 async function addToPlaylist(params, token, userId) {
     const { playlist_id, video_id } = params;
 
@@ -61,13 +54,10 @@ async function addToPlaylist(params, token, userId) {
         await axios.post(url, body, {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
         });
-        console.log(`[SUCCESS] ✅ Vidéo ${video_id} ajoutée à la playlist ${playlist_id}`);
+        console.log(`[SUCCESS] Vidéo ${video_id} ajoutée à la playlist ${playlist_id}`);
     });
 }
 
-// ==========================================
-// 2. SUBSCRIBE TO CHANNEL (Existant)
-// ==========================================
 async function subscribeToChannel(params, token, userId) {
     let { channel_id } = params;
     if (!channel_id) return;
@@ -87,9 +77,8 @@ async function subscribeToChannel(params, token, userId) {
             await axios.post(url, body, {
                 headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
             });
-            console.log(`[SUCCESS] ✅ Abonné à la chaîne ${channel_id}`);
+            console.log(`[SUCCESS] Abonné à la chaîne ${channel_id}`);
         } catch (error) {
-            // Si déjà abonné, on considère ça comme un succès
             if (error.response?.data?.error?.errors[0]?.reason === 'subscriptionDuplicate') {
                 console.log(`[INFO] Déjà abonné à cette chaîne. Succès.`);
             } else {
@@ -99,9 +88,6 @@ async function subscribeToChannel(params, token, userId) {
     });
 }
 
-// ==========================================
-// 3. POST COMMENT (Nouveau)
-// ==========================================
 async function postComment(params, token, userId) {
     const { video_id, text } = params;
 
@@ -122,13 +108,10 @@ async function postComment(params, token, userId) {
         await axios.post(url, body, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        console.log(`[SUCCESS] 💬 Commentaire posté sur la vidéo ${video_id}`);
+        console.log(`[SUCCESS] Commentaire posté sur la vidéo ${video_id}`);
     });
 }
 
-// ==========================================
-// 4. CREATE PLAYLIST (Nouveau)
-// ==========================================
 async function createPlaylist(params, token, userId) {
     const { title, description } = params;
 
@@ -143,20 +126,17 @@ async function createPlaylist(params, token, userId) {
             title: title,
             description: description || "Created by AREA"
         },
-        status: { privacyStatus: 'private' } // Privé par défaut
+        status: { privacyStatus: 'private' }
     };
 
     return await executeWithRefresh(userId, token, async (accessToken) => {
         const res = await axios.post(url, body, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        console.log(`[SUCCESS] 📂 Playlist créée : "${res.data.snippet.title}"`);
+        console.log(`[SUCCESS] Playlist créée : "${res.data.snippet.title}"`);
     });
 }
 
-// ==========================================
-// 5. DELETE PLAYLIST (Nouveau)
-// ==========================================
 async function deletePlaylist(params, token, userId) {
     const { playlist_id } = params;
     if (!playlist_id) return;
@@ -169,9 +149,6 @@ async function deletePlaylist(params, token, userId) {
     });
 }
 
-// ==========================================
-// 6. DELETE COMMENT (Nouveau)
-// ==========================================
 async function deleteComment(params, token, userId) {
     const { comment_id } = params;
     if (!comment_id) return;
@@ -180,19 +157,15 @@ async function deleteComment(params, token, userId) {
 
     return await executeWithRefresh(userId, token, async (accessToken) => {
         await axios.delete(url, { headers: { 'Authorization': `Bearer ${accessToken}` } });
-        console.log(`[SUCCESS] 🗑️ Commentaire ${comment_id} supprimé.`);
+        console.log(`[SUCCESS] Commentaire ${comment_id} supprimé.`);
     });
 }
 
-// ==========================================
-// HELPER CENTRALISÉ (Refresh Token Auto)
-// ==========================================
 async function executeWithRefresh(userId, token, apiCall) {
     try {
         await apiCall(token);
         return true;
     } catch (error) {
-        // GESTION ERREUR 401 (Refresh Token)
         if (error.response && error.response.status === 401) {
             console.log(`[WARN] Token YouTube expiré (User ${userId}). Tentative de refresh...`);
             
@@ -204,7 +177,6 @@ async function executeWithRefresh(userId, token, apiCall) {
                 const newToken = await refreshGoogleToken(userId, tokenData.refresh_token);
                 if (newToken) {
                     try {
-                        // Retry avec le nouveau token
                         await apiCall(newToken);
                         console.log(`[SUCCESS] Action YouTube réussie après refresh.`);
                         return true;
@@ -214,7 +186,6 @@ async function executeWithRefresh(userId, token, apiCall) {
                 }
             }
         } else {
-            // Autres erreurs (400, 404, etc.)
             console.error("[ERROR] YouTube API Failed:", error.response?.data?.error?.message || error.message);
         }
         return false;

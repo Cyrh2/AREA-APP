@@ -509,6 +509,21 @@ const options = {
         }
       },
 
+      // Google drive
+      '/services/google_drive/connect': {
+        get: {
+          summary: 'Démarrer la connexion Google Drive',
+          description: "Redirige vers la connexion Google avec les permissions Drive.",
+          tags: ['OAuth'],
+          security: [],
+          parameters: [
+            { in: 'query', name: 'userId', required: true, schema: { type: 'string' } },
+            { in: 'query', name: 'redirect', schema: { type: 'string' } }
+          ],
+          responses: { 302: { description: 'Redirection vers Google' } }
+        }
+      },
+
       // ============================================================
       // ⚡ AREAS (AUTOMATISATIONS)
       // ============================================================

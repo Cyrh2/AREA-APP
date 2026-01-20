@@ -11,7 +11,8 @@ const googleReactions = require('./google/reactions');
 const youtubeActions = require('./youtube/actions'); 
 const youtubeReactions = require('./youtube/reactions');
 const weatherActions = require('./weather/actions');
-// ------------------------------
+const driveActions = require('./drive/actions');
+const driveReactions = require('./drive/reactions');
 
 require('dotenv').config();
 
@@ -30,7 +31,7 @@ async function startCron() {
         *, 
         actions (name, slug, services (slug)), 
         reactions (name, slug, services (slug))
-    `) // On ajoute services (slug) à l'intérieur de actions et reactions
+    `)
                 .eq('is_active', true);
             if (error) throw error;
 
@@ -45,13 +46,11 @@ async function startCron() {
 }
 
 async function processArea(area) {
-    // Anti-spam : verifie si deja execute dans la minute
     if (wasExecutedRecently(area.last_executed_at))
         return;
 
     let shouldTrigger = false;
     
-    // Sécurité : Vérifie que action/reaction existent
     if (!area.actions || !area.reactions) {
         console.warn(`[WARN] Area ${area.id} has missing action/reaction data. Skipping.`);
         return;
@@ -60,34 +59,25 @@ async function processArea(area) {
     const triggerSlug = area.actions.slug;
 
     try {
-        // --- ROUTAGE DES TRIGGERS (ACTIONS) ---
-        // Note : Les fonctions .check() peuvent modifier area.action_params (ex: ajouter message_id)
-
-        // 1. Service Timer
+        // --- ACTIONS ---
         if (triggerSlug.startsWith('timer_')) {
             shouldTrigger = await timerActions.check(triggerSlug, area.action_params);
         } 
-        
-        // 2. Service GitHub
         else if (triggerSlug.startsWith('github_')) {
             const token = await getUserToken(area.user_id, 'github');
             if (token) {
                 shouldTrigger = await githubActions.check(triggerSlug, area.action_params, token, area.last_executed_at);
             }
         }
-        // 3. Service Weather
         else if (triggerSlug.startsWith('weather_')) {
             shouldTrigger = await weatherActions.check(triggerSlug, area.action_params, null, area.last_executed_at);
         }
-        // 4. Service Google Gmail
         else if (triggerSlug.startsWith('gmail_')) {
             const token = await getUserToken(area.user_id, 'google');
             if (token) {
-                // IMPORTANT : On passe area.action_params qui sera enrichi par la fonction (ex: ajout de message_id)
                 shouldTrigger = await googleActions.check(triggerSlug, area.action_params, token, area.last_executed_at, area.user_id);
             }
         }
-        // 5. Service YouTube
         else if (triggerSlug.startsWith('youtube_')) {
             const token = await getUserToken(area.user_id, 'google');
             shouldTrigger = await youtubeActions.check(
@@ -98,22 +88,29 @@ async function processArea(area) {
                 area.user_id
             );
         }
-        // 6. Service Discord
         else if (triggerSlug.startsWith('discord_')) {
             const botToken = process.env.DISCORD_BOT_TOKEN;
             shouldTrigger = await discordActions.check(triggerSlug, area.action_params, botToken, area.last_executed_at);
         }
-
-        // --- EXECUTION DE LA REACTION ---
+        else if (triggerSlug.startsWith('google_drive_')) {
+            const token = await getUserToken(area.user_id, 'google');
+            if (token) {
+                shouldTrigger = await driveActions.check(
+                    triggerSlug,
+                    area.action_params,
+                    token,
+                    area.last_executed_at,
+                    area.user_id
+                );
+            }
+        }
+        // --- RÉACTIONS ---
         if (shouldTrigger) {
             console.log(`[ACTION] 🔥 Triggering AREA ${area.id}`);
-            console.log(`[ACTION] 🔥 Triggering AREA ${area.id}`);
     
-            // On récupère le préfixe du service (ex: 'gmail') et le slug de la réaction (ex: 'send_email')
             const serviceSlug = area.reactions.services.slug;
             const reactionInternalSlug = area.reactions.slug;
 
-            // On reconstruit le slug complet pour le dictionnaire interne (le Registry)
             const fullReactionSlug = `${serviceSlug}_${reactionInternalSlug}`;
 
             const mergedParams = {
@@ -123,8 +120,6 @@ async function processArea(area) {
 
             console.log(`[DEBUG] Executing '${fullReactionSlug}'`);
 
-            // --- ROUTAGE PAR SERVICE ---
-            // On utilise serviceSlug pour router vers le bon module
             if (serviceSlug === 'discord') {
                 await discordReactions.execute(fullReactionSlug, mergedParams);
             }
@@ -146,17 +141,21 @@ async function processArea(area) {
                     await githubReactions.execute(fullReactionSlug, mergedParams, token);
                 }
             }
+            else if (serviceSlug === 'google_drive' || serviceSlug === 'drive') {
+                const token = await getUserToken(area.user_id, 'google');
+                if (token) {
+                    await driveReactions.execute(fullReactionSlug, mergedParams, token, area.user_id);
+                }
+            }
             else {
                 console.warn(`[WARN] No routing found for service: ${serviceSlug}`);
             }
 
-            // Mise à jour du timestamp
             await supabase.from('areas').update({ last_executed_at: new Date() }).eq('id', area.id);
 
             console.log(`[SUCCESS] Cycle finished for AREA ${area.id}`);
 
         } else if (!area.last_executed_at) {
-            // Initialisation silencieuse
             await supabase.from('areas').update({ last_executed_at: new Date() }).eq('id', area.id);
         }
 

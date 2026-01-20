@@ -17,17 +17,15 @@ module.exports = {
         issue_event: async (params, token, userId) => {
             return await actions.check('github_issue_event', params, token, null);
         },
-        issue_created: async (params, token, userId) => { // <--- AJOUTÉ
+        issue_created: async (params, token, userId) => { 
             return await actions.check('github_issue_created', params, token, null);
         }
     },
 
     reactions: {
-        // Cette clé correspond à "Create Issue" nettoyé par le contrôleur
         create_issue: async (params, token, userId) => {
             return await reactions.execute('github_create_issue', params, token, userId);
         },
-        // Cette clé correspond à "Create & Assign Issue" nettoyé par le contrôleur
         issue_assigned: async (params, token, userId) => {
             return await reactions.execute('github_issue_assigned', params, token, userId);
         }

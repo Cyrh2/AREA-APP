@@ -9,7 +9,6 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 module.exports = {
     check: async (slug, params, token, lastExecutedAt, userId) => {
         console.log(`[DEBUG] Gmail Trigger check: '${slug}'`);
-        // Les autres actions existantes...
         if (slug === 'gmail_check_received' || slug === 'gmail_received_email') return await checkNewEmails(slug, params, token, lastExecutedAt, userId);
         if (slug === 'gmail_subject_match') return await checkNewEmails(slug, params, token, lastExecutedAt, userId);
         if (slug === 'gmail_has_attachment') {
@@ -21,7 +20,6 @@ module.exports = {
             return await checkNewEmails(slug, params, token, lastExecutedAt, userId);
         }
 
-        // --- NOUVEAU : DÉTECTEUR D'ARNAQUE ---
         if (slug === 'gmail_detect_scam') {
             return await checkNewEmails(slug, params, token, lastExecutedAt, userId);
         }
@@ -33,7 +31,6 @@ module.exports = {
 async function checkNewEmails(slug, params, token, lastExecutedAt, userId) {
     const { from_address, subject, keyword, has_attachment } = params;
 
-    // 1. Gestion du Temps
     let afterTime = 0;
     if (lastExecutedAt) {
         afterTime = Math.floor(new Date(lastExecutedAt).getTime() / 1000) + 1;
@@ -41,10 +38,8 @@ async function checkNewEmails(slug, params, token, lastExecutedAt, userId) {
         afterTime = Math.floor((Date.now() - 120000) / 1000); 
     }
 
-    // 2. Construction de la requête de base
     let query = `after:${afterTime} label:INBOX`; 
     
-    // --- LOGIQUE SPÉCIALE ARNAQUE ---
     if (slug === 'gmail_detect_scam') {
         const scamKeywords = [
             "marabout",
@@ -57,12 +52,9 @@ async function checkNewEmails(slug, params, token, lastExecutedAt, userId) {
             "travail mystique"
         ];
         
-        // On construit une requête : ("mot1" OR "mot2" OR "mot3")
-        // Les guillemets permettent de chercher l'expression exacte (avec espaces)
         const orQuery = scamKeywords.map(word => `"${word}"`).join(' OR ');
         query += ` (${orQuery})`;
     }
-    // -------------------------------
 
     if (from_address && from_address.trim() !== '') query += ` from:${from_address}`;
     if (subject && subject.trim() !== '') query += ` subject:(${subject})`;
@@ -76,11 +68,8 @@ async function checkNewEmails(slug, params, token, lastExecutedAt, userId) {
         const messages = response.data.messages || [];
         
         if (messages.length > 0) {
-            console.log(`[SUCCESS] 🚨 Gmail Scam Detected! (${messages.length} found)`);
+            console.log(`[SUCCESS] Gmail Scam Detected! (${messages.length} found)`);
             
-            // 🔥 C'EST ICI QUE TOUT SE JOUE 🔥
-            // On injecte l'ID du message trouvé dans les 'params'.
-            // Comme ça, la REACTION (Delete) pourra utiliser 'params.message_id' !
             params.message_id = messages[0].id;
             
             return true;
@@ -88,8 +77,7 @@ async function checkNewEmails(slug, params, token, lastExecutedAt, userId) {
         return false;
 
     } catch (error) {
-        // ... (Ton code de gestion d'erreur/refresh token reste identique ici) ...
-        console.error("[ERROR] Gmail API:", error.message); // Version courte pour l'exemple
+        console.error("[ERROR] Gmail API:", error.message);
         return false;
     }
 }

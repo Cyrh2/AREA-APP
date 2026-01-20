@@ -3,7 +3,6 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const { getAllServices } = require('../services/index');
 
-// ⚠️ IMPORTANT : On utilise la SERVICE_ROLE_KEY ici pour contourner le RLS
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 exports.getAllServices = async (req, res) => {
@@ -44,7 +43,6 @@ exports.getAllServices = async (req, res) => {
     }
 };
 
-// New endpoint to get service configuration schema
 exports.getServiceConfig = async (req, res) => {
     const { serviceSlug, actionName } = req.params;
 
@@ -63,9 +61,7 @@ exports.getServiceConfig = async (req, res) => {
     }
 };
 
-// ✅ VERSION MISE À JOUR (Spotify -> YouTube)
 exports.getUserServicesStatus = async (req, res) => {
-    // 1. Récupération de l'ID User
     const { userId } = req.query;
 
     if (!userId) {
@@ -73,7 +69,6 @@ exports.getUserServicesStatus = async (req, res) => {
     }
 
     try {
-        // 2. On interroge la table oauth_tokens
         const { data, error } = await supabase
             .from('oauth_tokens')
             .select('provider')
@@ -81,29 +76,24 @@ exports.getUserServicesStatus = async (req, res) => {
 
         if (error) throw error;
 
-        // 3. On initialise l'état de base
-        // ❌ Spotify supprimé
-        // ✅ YouTube ajouté (par défaut à false)
         const status = {
             github: false,
             discord: false,
             google: false,
             youtube: false,
-            gmail: false
+            gmail: false,
+            google_drive: false
         };
 
-        // 4. On met à jour les status
         data.forEach(token => {
-            // Si le provider est dans la liste (github, discord, google)
             if (status.hasOwnProperty(token.provider)) {
                 status[token.provider] = true;
             }
 
-            // 🧠 LOGIQUE MAGIQUE GOOGLE (YouTube & Gmail)
-            // Si l'utilisateur a un token 'google', alors YouTube et Gmail sont considérés comme connectés
             if (token.provider === 'google') {
                 status.youtube = true;
                 status.gmail = true;
+                status.google_drive = true;
             }
         });
 
@@ -116,19 +106,20 @@ exports.getUserServicesStatus = async (req, res) => {
 };
 
 exports.disconnectService = async (req, res) => {
-    const { provider } = req.params;
-    
-    // On récupère l'ID user (soit via body, soit via query param)
+    let { provider } = req.params;
     const userId = req.query.userId || (req.body && req.body.userId);
 
     if (!userId || !provider) {
-        return res.status(400).json({ error: 'Paramètres manquants (userId ou provider).' });
+        return res.status(400).json({ error: 'Paramètres manquants.' });
+    }
+
+    if (['google_drive', 'gmail', 'youtube'].includes(provider)) {
+        provider = 'google';
     }
 
     try {
-        console.log(`[AUTH] Demande de déconnexion du service ${provider} pour l'user ${userId}`);
+        console.log(`[AUTH] Suppression du token '${provider}' pour l'user ${userId}`);
 
-        // 1. Suppression du token dans la table oauth_tokens
         const { error, count } = await supabase
             .from('oauth_tokens')
             .delete({ count: 'exact' })
@@ -138,14 +129,12 @@ exports.disconnectService = async (req, res) => {
         if (error) throw error;
 
         if (count === 0) {
-            return res.status(404).json({ message: 'Aucune connexion trouvée pour ce service.' });
+            return res.status(404).json({ error: 'Aucune connexion trouvée.' });
         }
 
-        console.log(`[SUCCESS] Token ${provider} supprimé pour l'utilisateur ${userId}.`);
-        return res.status(200).json({ message: `Déconnecté de ${provider} avec succès.` });
+        return res.status(200).json({ message: `Déconnecté de ${req.params.provider} avec succès.` });
 
     } catch (err) {
-        console.error('[ERROR] Erreur déconnexion service:', err.message);
-        return res.status(500).json({ error: 'Erreur serveur interne.' });
+        return res.status(500).json({ error: err.message });
     }
 };

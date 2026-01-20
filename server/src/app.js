@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
     /* Documentation Swagger */
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-    /* ---ROUTE DE TEST (Pour vérifier que ça marche) --- */
+    /* ---ROUTE DE TEST  --- */
 app.get('/', (req, res) => {
     res.json({
         message: 'Welcome to AREA API',
@@ -38,8 +38,8 @@ app.get('/', (req, res) => {
     });
 });
 
-    /* ---Route about.json (Obligatoire pour le projet) --- */
-// Route about.json (Dynamique & Conforme PDF)
+    /* ---Route about.json --- */
+// Route about.json 
 app.get('/about.json', aboutController.getAbout);
 
 
@@ -47,8 +47,6 @@ app.get('/about.json', aboutController.getAbout);
 // ROUTES D'AUTHENTIFICATION
 app.use('/auth', authRoutes);
 app.use('/services', serviceRoutes)
-
 // ROUTES DES AREAS
 app.use('/areas', areaRoutes);
-
 module.exports = app;

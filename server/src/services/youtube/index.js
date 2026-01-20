@@ -1,5 +1,4 @@
 // server/src/services/youtube/index.js
-
 const actions = require('./actions');
 const reactions = require('./reactions');
 
@@ -15,7 +14,7 @@ module.exports = {
         liked_video: async (params, token, userId) => {
             return await actions.check('youtube_liked_video', params, token, null, userId);
         },
-        new_subscription: async (params, token, userId) => { // <--- AJOUTÉ
+        new_subscription: async (params, token, userId) => {
             return await actions.check('youtube_new_subscription', params, token, null, userId);
         }
     },
@@ -24,19 +23,19 @@ module.exports = {
         add_to_playlist: async (params, token, userId) => {
             return await reactions.execute('youtube_add_to_playlist', params, token, userId);
         },
-        subscribe: async (params, token, userId) => { // <--- AJOUTÉ
+        subscribe: async (params, token, userId) => {
             return await reactions.execute('youtube_subscribe', params, token, userId);
         },
-        post_comment: async (params, token, userId) => { // <--- AJOUTÉ
+        post_comment: async (params, token, userId) => {
             return await reactions.execute('youtube_post_comment', params, token, userId);
         },
-        create_playlist: async (params, token, userId) => { // <--- AJOUTÉ
+        create_playlist: async (params, token, userId) => {
             return await reactions.execute('youtube_create_playlist', params, token, userId);
         },
-        delete_playlist: async (params, token, userId) => { // <--- AJOUTÉ
+        delete_playlist: async (params, token, userId) => {
             return await reactions.execute('youtube_delete_playlist', params, token, userId);
         },
-        delete_comment: async (params, token, userId) => { // <--- AJOUTÉ
+        delete_comment: async (params, token, userId) => {
             return await reactions.execute('youtube_delete_comment', params, token, userId);
         }
     },

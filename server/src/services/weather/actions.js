@@ -3,11 +3,9 @@ require('dotenv').config();
 
 module.exports = {
     check: async (slug, params) => {
-        // Trigger 1 : Condition Météo
         if (slug === 'weather_condition') {
             return await checkWeatherCondition(params);
         }
-        // Trigger 2 : Température (Ajouté)
         if (slug === 'weather_temp_drop') {
             return await checkTempDrop(params);
         }
@@ -17,7 +15,6 @@ module.exports = {
 
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 
-// --- FONCTION 1 : CONDITION ---
 async function checkWeatherCondition(params) {
     const { city, condition } = params;
     
@@ -30,12 +27,8 @@ async function checkWeatherCondition(params) {
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
         const response = await axios.get(url);
         
-        const weatherMain = response.data.weather[0].main; // Ex: "Rain", "Clear"
+        const weatherMain = response.data.weather[0].main;
         
-        // Debug léger
-        // console.log(`[DEBUG] Weather in ${city}: ${weatherMain} (Target: ${condition})`);
-
-        // Comparaison insensible à la casse
         if (weatherMain.toLowerCase() === condition.toLowerCase()) {
             return true;
         }
@@ -47,7 +40,6 @@ async function checkWeatherCondition(params) {
     }
 }
 
-// --- FONCTION 2 : TEMPÉRATURE ---
 async function checkTempDrop(params) {
     const { city, threshold } = params;
 
@@ -59,7 +51,6 @@ async function checkTempDrop(params) {
         
         const currentTemp = response.data.main.temp;
         
-        // Si la température est INFÉRIEURE au seuil (ex: 15°C)
         if (currentTemp < Number(threshold)) {
             console.log(`[SUCCESS] Alert! Temp in ${city} is ${currentTemp}°C (< ${threshold}°C)`);
             return true;

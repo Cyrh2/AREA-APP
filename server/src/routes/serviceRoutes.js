@@ -165,8 +165,33 @@ router.get('/gmail/connect', googleController.connectGoogle);
  */
 router.get('/youtube/connect', googleController.connectGoogle);
 
-// --- STATUS ---
+// --- GOOGLE DRIVE (Alias vers Google) ---
 
+/**
+ * @swagger
+ * /services/drive/connect:
+ * get:
+ * summary: Démarrer l'OAuth Google Drive
+ * description: Utilise le compte Google pour activer les fonctionnalités Drive.
+ * tags: [OAuth]
+ * parameters:
+ * - in: query
+ * name: userId
+ * required: true
+ * schema: 
+ * type: string
+ * - in: query
+ * name: redirect
+ * schema: 
+ * type: string
+ * responses:
+ * 302: 
+ * description: Redirection vers Google Accounts
+ */
+router.get('/google_drive/connect', googleController.connectGoogle);
+// router.get('/drive/connect', googleController.connectGoogle);
+
+// AJOUTER CETTE LIGNE : Alias pour matcher l'URL du front-end
 /**
  * @swagger
  * /services/my-connections:

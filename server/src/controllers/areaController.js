@@ -2,8 +2,6 @@
 const supabase = require('../config/supabase'); // Client standard pour les actions utilisateur
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
-
-// 🔐 CLIENT ADMIN : Indispensable pour lire la table oauth_tokens dans la fonction de test
 const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 /**
@@ -135,7 +133,6 @@ exports.testArea = async (req, res) => {
     console.log(`[TEST] Demande de test manuel pour l'AREA ${areaId}`);
 
     try {
-        // 1. Récupérer l'AREA avec le SLUG technique (On utilise supabaseAdmin)
         const { data: area, error: fetchError } = await supabaseAdmin
             .from('areas')
             .select(`
@@ -149,17 +146,12 @@ exports.testArea = async (req, res) => {
         if (fetchError || !area) {
             return res.status(404).json({ error: 'AREA introuvable ou accès refusé' });
         }
-
-        // 2. RÉCUPÉRATION DU SLUG TECHNIQUE DIRECTEMENT
-        // Plus besoin de nettoyer le Name, on utilise la colonne slug !
         const serviceSlug = area.reactions.services.slug.toLowerCase();
-        const reactionInternalSlug = area.reactions.slug; // ex: 'issue_assigned'
-        
+        const reactionInternalSlug = area.reactions.slug;        
         const reactionSlug = `${serviceSlug}_${reactionInternalSlug}`;
         
         console.log(`[TEST] Slug technique détecté: '${reactionSlug}' (Service: ${serviceSlug})`);
 
-        // 3. RÉCUPÉRATION DU TOKEN (Inchangé)
         let token = null;
         if (['gmail', 'youtube', 'google', 'github'].includes(serviceSlug)) {
             let providerKey = serviceSlug.includes('github') ? 'github' : 'google';
@@ -174,7 +166,6 @@ exports.testArea = async (req, res) => {
             token = tokenData?.access_token;
         }
 
-        // 4. EXÉCUTION (Utilise le slug technique maintenant !)
         const { executeReaction } = require('../services/index');
         const result = await executeReaction(
             reactionSlug, 
@@ -183,7 +174,6 @@ exports.testArea = async (req, res) => {
             userId 
         );
         
-        // 5. Mise à jour de la date d'exécution (Inchangé)
         await supabaseAdmin
             .from('areas')
             .update({ 
@@ -213,7 +203,6 @@ exports.testArea = async (req, res) => {
  * Vérifier et déclencher une AREA (Legacy)
  */
 exports.triggerAreaCheck = async (req, res) => {
-    // ... (Tu peux garder ta fonction actuelle ou la mettre à jour, elle est peu utilisée manuellement)
     const userId = req.user.id;
     const { areaId } = req.params;
     try {
@@ -241,3 +230,4 @@ exports.triggerAreaCheck = async (req, res) => {
         res.status(200).json(result);
     } catch (error) { res.status(500).json({ error: error.message }); }
 };
+
