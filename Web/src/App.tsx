@@ -42,7 +42,7 @@ function LanguageToggle() {
 }
 
 function AppContent() {
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [areas, setAreas] = useState<Area[]>([]);

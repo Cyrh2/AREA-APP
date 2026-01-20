@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Download, Globe, Zap, Menu, X, Smartphone, ArrowRight, Mail, Cloud, Twitter, Github, Twitch, Slack } from 'lucide-react';
 import { useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, type Variants } from 'framer-motion';
 import logo from '../assets/logo.png';
 import firstImage from '../assets/first.png';
 import helloLightImage from '../assets/light/hello.png';
@@ -16,12 +16,12 @@ export const LandingPage = () => {
     const y1 = useTransform(scrollY, [0, 500], [0, 200]);
     const y2 = useTransform(scrollY, [0, 500], [0, -150]);
 
-    const fadeInUp = {
+    const fadeInUp: Variants = {
         hidden: { opacity: 0, y: 30 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
     };
 
-    const staggerContainer = {
+    const staggerContainer: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
