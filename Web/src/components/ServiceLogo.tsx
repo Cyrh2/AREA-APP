@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Github, MessageSquare, Mail, Youtube, Cloud, Clock, Music } from 'lucide-react';
+import React, { useState } from 'react';
+import { Github, MessageSquare, Mail, Youtube, Cloud, Clock, Music, Box } from 'lucide-react';
 import { useTheme } from './theme-provider';
 
 interface ServiceLogoProps {
@@ -9,34 +9,53 @@ interface ServiceLogoProps {
     size?: number;
 }
 
+/**
+ * Normalize service slug for Simple Icons CDN
+ * Removes spaces, special characters, and converts to lowercase
+ * Examples: "GitHub Enterprise" → "github", "MS Teams" → "msteams"
+ */
+const normalizeSlug = (slug: string): string => {
+    return slug
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '') // Remove all non-alphanumeric characters
+        .trim();
+};
+
 export const ServiceLogo: React.FC<ServiceLogoProps> = ({ slug, className = "", size = 24 }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    const [imageError, setImageError] = useState(false);
+
+    const normalizedSlug = normalizeSlug(slug);
     const s = slug.toLowerCase();
 
-    // Mapping slugs to CDN URLs (Simple Icons)
-    // We adjust colors for visibility and aesthetic consistency
-    const logoUrls: Record<string, string> = {
-        github: isDark ? 'https://cdn.simpleicons.org/github/white' : 'https://cdn.simpleicons.org/github/black',
-        discord: isDark ? 'https://cdn.simpleicons.org/discord/white' : 'https://cdn.simpleicons.org/discord/5865F2',
-        google: 'https://cdn.simpleicons.org/google',
-        gmail: 'https://cdn.simpleicons.org/gmail',
-        youtube: 'https://cdn.simpleicons.org/youtube/FF0000',
-        spotify: 'https://cdn.simpleicons.org/spotify/1DB954',
+    /**
+     * Automatically generate Simple Icons CDN URL
+     * For dark mode: use white color for better visibility
+     * For light mode: use default brand colors (no color param)
+     */
+    const getAutoIconUrl = (normalized: string): string => {
+        if (isDark) {
+            return `https://cdn.simpleicons.org/${normalized}/white`;
+        }
+        // For light mode, let Simple Icons use default brand color
+        return `https://cdn.simpleicons.org/${normalized}`;
     };
 
-    if (logoUrls[s]) {
+    // Try to load from Simple Icons CDN first (if not already failed)
+    if (!imageError && normalizedSlug) {
         return (
             <img
-                src={logoUrls[s]}
+                src={getAutoIconUrl(normalizedSlug)}
                 alt={`${slug} logo`}
                 className={className}
                 style={{ width: size, height: size, objectFit: 'contain' }}
+                onError={() => setImageError(true)} // Fallback to Lucide icons on error
             />
         );
     }
 
-    // Fallback to Lucide Icons if not in Simple Icons list
+    // Fallback to Lucide Icons based on keyword matching
     const iconProps = {
         className: `${className} ${isDark ? 'text-white' : 'text-gray-900'}`,
         size
@@ -47,9 +66,10 @@ export const ServiceLogo: React.FC<ServiceLogoProps> = ({ slug, className = "", 
     if (s.includes('gmail') || s.includes('mail')) return <Mail {...iconProps} />;
     if (s.includes('youtube')) return <Youtube {...iconProps} />;
     if (s.includes('weather')) return <Cloud {...iconProps} />;
-    if (s.includes('timer')) return <Clock {...iconProps} />;
-    if (s.includes('spotify')) return <Music {...iconProps} />;
+    if (s.includes('timer') || s.includes('clock') || s.includes('cron')) return <Clock {...iconProps} />;
+    if (s.includes('spotify') || s.includes('music')) return <Music {...iconProps} />;
 
+    // Final fallback: Generic box icon or first letter
     return (
         <div
             className={`${className} ${isDark ? 'text-white' : 'text-gray-900'}`}
