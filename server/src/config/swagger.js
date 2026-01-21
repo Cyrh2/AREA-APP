@@ -1,3 +1,4 @@
+// src/config/swagger.js
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const options = {
@@ -428,7 +429,7 @@ const options = {
           security: [],
           parameters: [
             { in: 'query', name: 'userId', required: true, schema: { type: 'string' } },
-            { in: 'query', name: 'redirect', schema: { type: 'string' } }
+            { in: 'query', name: 'redirect', schema: { type: 'string', enum: ['web', 'mobile'] } }
           ],
           responses: { 302: { description: 'Redirection vers Discord' } }
         }
@@ -479,7 +480,7 @@ const options = {
           security: [],
           parameters: [
             { in: 'query', name: 'userId', required: true, schema: { type: 'string' } },
-            { in: 'query', name: 'redirect', schema: { type: 'string' } }
+            { in: 'query', name: 'redirect', schema: { type: 'string', enum: ['web', 'mobile'] } }
           ],
           responses: { 302: { description: 'Redirection vers Google' } }
         }
@@ -503,7 +504,7 @@ const options = {
           security: [],
           parameters: [
             { in: 'query', name: 'userId', required: true, schema: { type: 'string' } },
-            { in: 'query', name: 'redirect', schema: { type: 'string' } }
+            { in: 'query', name: 'redirect', schema: { type: 'string', enum: ['web', 'mobile'] } }
           ],
           responses: { 302: { description: 'Redirection vers Google' } }
         }
@@ -518,7 +519,7 @@ const options = {
           security: [],
           parameters: [
             { in: 'query', name: 'userId', required: true, schema: { type: 'string' } },
-            { in: 'query', name: 'redirect', schema: { type: 'string' } }
+            { in: 'query', name: 'redirect', schema: { type: 'string', enum: ['web', 'mobile'] } }
           ],
           responses: { 302: { description: 'Redirection vers Google' } }
         }

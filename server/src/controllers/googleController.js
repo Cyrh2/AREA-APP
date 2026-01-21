@@ -1,4 +1,3 @@
-// controllers/googleController.js
 const axios = require('axios');
 const querystring = require('querystring');
 const { createClient } = require('@supabase/supabase-js');
@@ -35,7 +34,7 @@ exports.connectGoogle = (req, res) => {
         scope: SCOPES,
         state: state,
         access_type: 'offline',
-        prompt: 'consent'
+        prompt: 'consent' 
     });
 
     res.redirect(`${GOOGLE_AUTH_URL}?${queryParams}`);
@@ -43,14 +42,24 @@ exports.connectGoogle = (req, res) => {
 
 exports.googleCallback = async (req, res) => {
     const { code, state, error } = req.query;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    let platform = 'web';
+    let userId = null;
+    if (state) {
+        const parts = state.split('|');
+        userId = parts[0];
+        platform = parts[1] || 'web';
+    }
 
     if (error || !code) {
-        return res.redirect('http://localhost:5173/dashboard?service=google&status=error');
+        if (platform === 'mobile') {
+            return res.redirect(`area-app://google-error?status=error`);
+        }
+        return res.redirect(`${frontendUrl}/home?status=error&service=google`);
     }
 
     try {
-        const [userId, platform] = state.split('|');
-
         const response = await axios.post(GOOGLE_TOKEN_URL, {
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
@@ -60,13 +69,12 @@ exports.googleCallback = async (req, res) => {
         });
 
         const { access_token, refresh_token, expires_in } = response.data;
-        const expiresAt = new Date(Date.now() + expires_in * 1000);
 
         const tokenData = {
             user_id: userId,
             provider: 'google',
             access_token: access_token,
-            expires_at: expiresAt,
+            expires_at: new Date(Date.now() + expires_in * 1000),
             updated_at: new Date()
         };
 
@@ -80,15 +88,19 @@ exports.googleCallback = async (req, res) => {
 
         if (dbError) throw dbError;
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const finalUrl = platform === 'web'
-            ? `${frontendUrl}/dashboard?service=google&status=success`
-            : 'area://dashboard?service=google&status=success';
-
-        res.redirect(finalUrl);
+        
+        if (platform === 'mobile') {
+            return res.redirect(`area-app://google-success?userId=${userId}&status=success`);
+        } else {
+            return res.redirect(`${frontendUrl}/home?status=success&service=google`);
+        }
 
     } catch (err) {
         console.error('Google Auth Error:', err.response ? err.response.data : err.message);
-        res.redirect('http://localhost:5173/dashboard?service=google&status=error');
+        
+        if (platform === 'mobile') {
+            return res.redirect(`area-app://google-error?status=error`);
+        }
+        res.redirect(`${frontendUrl}/home?status=error&service=google`);
     }
 };

@@ -5,7 +5,6 @@ require('dotenv').config();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-// URLs Officielles Discord
 const DISCORD_AUTH_URL = 'https://discord.com/api/oauth2/authorize';
 const DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token';
 
@@ -31,9 +30,10 @@ exports.connectDiscord = (req, res) => {
 
 exports.discordCallback = async (req, res) => {
     const { code, state, error } = req.query;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (error || !code) {
-        return res.redirect('http://localhost:5173/dashboard?service=discord&status=error');
+        return res.redirect(`${frontendUrl}/home?status=error&service=discord`);
     }
 
     try {
@@ -48,9 +48,7 @@ exports.discordCallback = async (req, res) => {
         });
 
         const response = await axios.post(DISCORD_TOKEN_URL, tokenParams, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
         const { access_token, refresh_token, expires_in } = response.data;
@@ -69,36 +67,38 @@ exports.discordCallback = async (req, res) => {
 
         if (dbError) throw dbError;
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const finalUrl = platform === 'web'
-            ? `${frontendUrl}/dashboard?service=discord&status=success`
-            : 'area://dashboard?service=discord&status=success';
-
-        res.redirect(finalUrl);
+        // --- REDIRECTION INTELLIGENTE ---
+        if (platform === 'mobile') {
+            return res.redirect(`area-app://discord-success?userId=${userId}&status=success`);
+        } else {
+            return res.redirect(`${frontendUrl}/home?status=success&service=discord`);
+        }
 
     } catch (err) {
         console.error('Discord Auth Error:', err.response ? err.response.data : err.message);
-        res.redirect('http://localhost:5173/dashboard?service=discord&status=error');
+        const platform = state ? state.split('|')[1] : 'web';
+        
+        if (platform === 'mobile') {
+            return res.redirect(`area-app://discord-error?status=error`);
+        }
+        res.redirect(`${frontendUrl}/home?status=error&service=discord`);
     }
 };
 
 exports.inviteBot = (req, res) => {
-    const { userId } = req.query;
+    const { userId, redirect } = req.query;
 
     if (!userId) {
         return res.status(400).json({ error: "User ID is required to invite the bot." });
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID;
-    
     const permissions = '8'; 
-    
     const redirectUri = encodeURIComponent(process.env.DISCORD_CALLBACK_URL);
     
-    const state = `${userId}|web|bot_invite`;
+    const state = `${userId}|${redirect || 'web'}|bot_invite`;
 
     const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=${permissions}&scope=bot&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
 
     res.redirect(url);
-
 };
