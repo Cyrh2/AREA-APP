@@ -1,0 +1,29 @@
+
+services:
+  # Dev override for web: run Vite dev server and mount source for fast development
+  client_web:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./Web:/app
+      - client_shared:/app/public
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - HOST=0.0.0.0
+    command: ["sh", "-c", "npm ci --prefer-offline --no-audit || true; npm run dev -- --host 0.0.0.0 --port 8081"]
+
+  # Dev override for mobile: mount local source and run expo dev server
+  client_mobile:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./area_mobile:/app
+      - client_shared:/shared
+      - ./apk:/app/apk:ro # mount host apk folder as read-only
+    ports:
+      - "19000:19000"
+      - "19001:19001" 
+      - "19002:19002"
+    command: ["sh", "-c", "cp /apk/client.apk /shared/client.apk && npx expo start --tunnel --no-dev --minify --host lan"]

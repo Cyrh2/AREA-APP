@@ -1,0 +1,67 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: area-server:latest
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./server/.env
+    command: ["npm", "start"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'require(\"http\").get(\"http://localhost:8080/about.json\", res=>{process.exit(res.statusCode===200?0:1)}).on(\"error\", ()=>process.exit(1))'" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
+  client_mobile:
+      build:
+        context: ./area_mobile
+        dockerfile: Dockerfile
+      volumes:
+        - client_shared:/shared
+        - ./apk:/app/apk:ro # mount host apk folder as read-only
+      depends_on:
+        - server
+      ports:
+        - "19000:19000"
+        - "19001:19001"
+        - "19002:19002"
+      command: ["sh", "-c", "cp /apk/client.apk /shared/client.apk && npx expo start --tunnel --no-dev --minify --host lan"]
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:19000/ || (test -f /shared/client.apk && exit 0) || exit 1"]
+        interval: 20s
+        timeout: 5s
+        retries: 3
+        start_period: 5s
+
+  client_web:
+    build:
+      context: ./Web
+      dockerfile: Dockerfile
+    # Mount only the shared volume (don't override built app). The shared
+    # folder will be available at /usr/share/nginx/html/shared so /client.apk
+    # can be served from there.
+    volumes:
+      - client_shared:/usr/share/nginx/html/shared
+    ports:
+      - "8081:8081"
+    depends_on:
+      - server
+      - client_mobile
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/client.apk || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  client_shared:
+
