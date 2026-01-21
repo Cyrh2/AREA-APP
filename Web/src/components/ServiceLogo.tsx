@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Github, MessageSquare, Mail, Youtube, Cloud, Clock, Music, Box } from 'lucide-react';
+import { Github, MessageSquare, Mail, Youtube, Cloud, Clock, Music } from 'lucide-react';
 import { useTheme } from './theme-provider';
 
 interface ServiceLogoProps {
